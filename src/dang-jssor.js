@@ -1,92 +1,103 @@
-angular.module("dang-jssor", [])
-	.factory("jssorServices", function () {
-		return {
-			random: function (minimum, maximum) {
-				return Math.floor((Math.random() * (maximum + 1 - minimum) + minimum));
-			}
-		};
-	})
-	.directive("enableJssor", function () {
+angular.module("dang-jssor", []).factory("jssorServices", function () {
+	    return {
+	        random: function (minimum, maximum) {
+	            return Math.floor((Math.random() * (maximum + 1 - minimum) + minimum));
+	        }
+	    };
+}).directive('onFinishRender', function () {
+    return {
+        restrict: 'A',
+        link: function (scope, element, attrs, ngModel) {
+            debugger;
+            if (scope.$last) {
+                scope.$evalAsync(attrs.onFinishRender);
+            }
+        }
+    };
+}).directive("enableJssor", function () {
 	    return {
 	        restrict: "A",
 	        scope: {
 	            jssorOptions: "=",
 	            jssorOnChanged: "&",
-	            jssorObject: "="
+	            jssorObject: "=",
+	            jssorTrigger: "="
 	        },
 	        link: function (scope, element, attrs) {
-	            if (attrs.jssorTrigger == 'true') {
-	                var container = $(element).closest('.slides-container');
-
-	                if (!container.attr("id"))
-	                    container.attr("id", new Date().getTime());
-
-	                if (scope.jssorOptions == undefined)
-	                {
-	                	console.log("I reassigned options here!");
-	                	scope.jssorOptions = {};
+	            scope.$watch('jssorTrigger', function () {	                
+	                return scope.handleReady();
+	            });
+	            angular.element(window).bind('orientationchange', function () {
+	                if (scope.jssorObject) {
+	                    scope.jssorObject.updateSliderWidth();
 	                }
-
-	                var slider = new $JssorSlider$(container.attr("id"), scope.jssorOptions);
-
-                	var handle = {
-                        slidesCount: slider.$SlidesCount(),
-                        slider: slider,
-                        playTo: function (index) {
-                            slider.$PlayTo(index);
-                        },
-                        goTo: function (index) {
-                            slider.$GoTo(index);
-                        },
-                        pause: function () {
-                            slider.$Pause();
-                        },
-                        play: function () {
-                            slider.$Play();
-                        },
-                        previous: function () {
-                            slider.$Previous();
-                        },
-                        next: function () {
-                            slider.$Next();
-                        }
-                    };
-
-                	if (scope.jssorOptions)
-                    	scope.jssorOptions.handle = handle;
-
-	                if (scope.jssorObject)
-	                    scope.jssorObject = handle;
-
-                	if (scope.jssorOptions.$StartIndex == undefined || scope.jssorOptions.$StartIndex == null)
-                		scope.jssorOptions.$StartIndex = 0;
-
-                	handle.playTo(scope.jssorOptions.$StartIndex);
-
-	                if (scope.jssorOptions.onReady) {
-	                	scope.jssorOptions.onReady();
+	            });
+	            angular.element(window).bind('resize', function () {
+	                if (scope.jssorObject) {
+	                    scope.jssorObject.updateSliderWidth();
+	                }
+	            });
+	            scope.handleReady = function () {
+	                if (scope.jssorTrigger) {
+	                    timeout(function () { return scope.init(); });
+	                }
+	            };
+	            scope.init = function () {
+	                var container = element.closest('.slides-container');
+	                if (!container.attr("id")) {
+	                    scope.id = new Date().getTime().toString();
+	                    container.attr("id", scope.id);
+	                }
+	                var slider = new $JssorSlider$(scope.id, scope.jssorOptions);
+	                var handle = {
+	                    slidesCount: slider.$SlidesCount(),
+	                    slider: slider,
+	                    playTo: function (index) {
+	                        slider.$PlayTo(index);
+	                    },
+	                    goTo: function (index) {
+	                        slider.$GoTo(index);
+	                    },
+	                    pause: function () {
+	                        slider.$Pause();
+	                    },
+	                    play: function () {
+	                        slider.$Play();
+	                    },
+	                    previous: function () {
+	                        slider.$Prev();
+	                    },
+	                    next: function () {
+	                        slider.$Next();
+	                    },
+	                    setTransition: function (transition) {
+	                        slider.$SetSlideshowTransitions([transition]);
+	                    },
+	                    updateSliderWidth: function () {
+	                        var parent = angular.element(slider.$Elmt).parent();
+	                        if (parent && parent.width() > 0) {
+	                            slider.$ScaleWidth(parent.width());
+	                        }
+	                        else {
+	                            timeout(function () { return scope.jssorObject.updateSliderWidth(); }, 50);
+	                        }
+	                    }
 	                };
-
+	                scope.jssorObject = handle;
 	                slider.$On($JssorSlider$.$EVT_PARK, function (slideIndex, fromIndex) {
-	                    var status = null;
-
-	                    scope.$emit("JssorSliderChanged", status = {
-	                        name: scope.jssorOptions.name,
+	                    var status = {
+	                        id: scope.id,
 	                        slideIndex: slideIndex,
 	                        fromIndex: fromIndex
-	                    });
-
+	                    };
 	                    if (scope.jssorOnChanged)
 	                        scope.jssorOnChanged({ jssorData: status });
-
-	                    scope.jssorOptions.status = status;
-	                    
-	                    //if (scope.jssorOptions.name) {
-	                    //    console.log("SliderChanged:", scope.jssorOptions.name, angular.toJson(status));
-	                    //}
-	                    scope.$apply();
 	                });
+	                handle.playTo(scope.jssorOptions.$StartIndex);
+	                if (scope.jssorOptions.onReady) {
+	                    scope.jssorOptions.onReady();
+	                };
 	            }
 	        }
-	    }
-	});
+	    };
+    });
