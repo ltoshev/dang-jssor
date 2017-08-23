@@ -8,7 +8,6 @@ angular.module("dang-jssor", []).factory("jssorServices", function () {
     return {
         restrict: 'A',
         link: function (scope, element, attrs, ngModel) {
-            debugger;
             if (scope.$last) {
                 scope.$evalAsync(attrs.onFinishRender);
             }
@@ -39,7 +38,9 @@ angular.module("dang-jssor", []).factory("jssorServices", function () {
 	            });
 	            scope.handleReady = function () {
 	                if (scope.jssorTrigger) {
-	                    timeout(function () { return scope.init(); });
+	                    setTimeout(function () {
+	                        return scope.init();
+	                    });
 	                }
 	            };
 	            scope.init = function () {
@@ -79,7 +80,7 @@ angular.module("dang-jssor", []).factory("jssorServices", function () {
 	                            slider.$ScaleWidth(parent.width());
 	                        }
 	                        else {
-	                            timeout(function () { return scope.jssorObject.updateSliderWidth(); }, 50);
+	                            setTimeout(function () { return scope.jssorObject.updateSliderWidth(); }, 50);
 	                        }
 	                    }
 	                };
